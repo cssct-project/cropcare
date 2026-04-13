@@ -1,0 +1,5 @@
+{
+  "name": "CropCare",
+  "description": "Crop Disease Detection Platform for farmers in Africa.",
+  "requestFramePermissions": ["microphone", "camera"]
+}

@@ -1,0 +1,113 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: {userId} (matches Auth UID)
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - firstName: string (required, < 50 chars)
+    //   - lastName: string (required, < 50 chars)
+    //   - email: string (required, valid email)
+    //   - phoneNumber: string (optional, < 20 chars)
+    //   - country: string (required, < 50 chars)
+    //   - state: string (required, < 50 chars)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // Collection: diagnoses
+    // Document ID: {diagnosisId}
+    // Fields:
+    //   - userId: string (required, immutable, matches auth.uid)
+    //   - cropImage: string (required, < 1048576 chars)
+    //   - diseaseName: string (required, < 100 chars)
+    //   - location: string (required, < 100 chars)
+    //   - details: string (required, < 2000 chars)
+    //   - date: timestamp (required, immutable)
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+    function isValidStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+    function isValidOptionalStringLength(field, minLen, maxLen) {
+      return !('field' in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    // Domain Validators
+    function isValidUser() {
+      let allowedFields = ['uid', 'firstName', 'lastName', 'email', 'phoneNumber', 'country', 'state', 'createdAt'];
+      let requiredFields = ['uid', 'firstName', 'lastName', 'email', 'country', 'state', 'createdAt'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.uid == request.auth.uid &&
+             isValidStringLength('firstName', 1, 50) &&
+             isValidStringLength('lastName', 1, 50) &&
+             isValidEmail(request.resource.data.email) &&
+             isValidOptionalStringLength('phoneNumber', 0, 20) &&
+             isValidStringLength('country', 1, 50) &&
+             isValidStringLength('state', 1, 50) &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    function isValidDiagnosis() {
+      let allowedFields = ['userId', 'userName', 'userEmail', 'country', 'state', 'cropImage', 'diseaseName', 'location', 'details', 'date', 'source'];
+      let requiredFields = ['userId', 'cropImage', 'diseaseName', 'location', 'details', 'date'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.userId == request.auth.uid &&
+             isValidStringLength('cropImage', 1, 1048576) &&
+             isValidStringLength('diseaseName', 1, 100) &&
+             isValidStringLength('location', 1, 100) &&
+             isValidStringLength('details', 1, 2000) &&
+             request.resource.data.date is timestamp &&
+             (!('userName' in request.resource.data) || isValidStringLength('userName', 1, 100)) &&
+             (!('userEmail' in request.resource.data) || isValidEmail(request.resource.data.userEmail)) &&
+             (!('country' in request.resource.data) || isValidStringLength('country', 1, 50)) &&
+             (!('state' in request.resource.data) || isValidStringLength('state', 1, 50)) &&
+             (!('source' in request.resource.data) || (request.resource.data.source in ['Camera Capture', 'Image Upload']));
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser();
+      allow update: if isOwner(userId) && isValidUser() && 
+                    request.resource.data.uid == resource.data.uid &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(userId);
+    }
+
+    match /diagnoses/{diagnosisId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidDiagnosis();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && isValidDiagnosis() &&
+                    request.resource.data.userId == resource.data.userId &&
+                    request.resource.data.date == resource.data.date;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

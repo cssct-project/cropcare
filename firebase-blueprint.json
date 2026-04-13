@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A farmer or user of the CropCare platform.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phoneNumber": { "type": "string" },
+        "country": { "type": "string" },
+        "state": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "firstName", "lastName", "email", "country", "state", "createdAt"]
+    },
+    "Diagnosis": {
+      "title": "Diagnosis",
+      "description": "A crop disease diagnosis record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who created the diagnosis" },
+        "cropImage": { "type": "string", "description": "Base64 string or URL of the crop image" },
+        "diseaseName": { "type": "string", "description": "Name of the detected disease" },
+        "location": { "type": "string", "description": "Location where the image was taken" },
+        "details": { "type": "string", "description": "Details and recommendations" },
+        "date": { "type": "string", "format": "date-time", "description": "Timestamp of the diagnosis" }
+      },
+      "required": ["userId", "cropImage", "diseaseName", "location", "details", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/diagnoses/{diagnosisId}": {
+      "schema": { "$ref": "#/entities/Diagnosis" },
+      "description": "Crop diagnoses created by users"
+    }
+  }
+}
