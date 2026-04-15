@@ -51,7 +51,18 @@ export default function VoiceAssistant() {
     }
   };
 
-  const startListening = () => {
+  const startListening = async () => {
+    try {
+      // Explicitly request microphone permission first to trigger the browser prompt reliably
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop the tracks immediately since we only needed to trigger the permission prompt
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+      console.error("Microphone permission denied:", err);
+      setResponse("Microphone access was denied. Please allow microphone permissions in your browser settings. If you are in a preview window, try opening the app in a new tab.");
+      return;
+    }
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
@@ -79,7 +90,11 @@ export default function VoiceAssistant() {
     recognition.onerror = (event: any) => {
       console.error("Speech recognition error", event.error);
       setIsListening(false);
-      setResponse("Microphone error. Please ensure permissions are granted.");
+      if (event.error === 'not-allowed') {
+        setResponse("Microphone access was denied. Please allow microphone permissions in your browser settings. If you are in a preview window, try opening the app in a new tab.");
+      } else {
+        setResponse(`Microphone error (${event.error}). Please ensure permissions are granted.`);
+      }
     };
 
     recognition.onend = () => {
@@ -249,7 +264,7 @@ export default function VoiceAssistant() {
         </div>
       </div>
       
-      <div className="text-center min-h-[80px] flex flex-col justify-center">
+      <div className="text-center min-h-[80px] flex flex-col justify-center mb-6">
         {transcript && (
           <p className="text-gray-500 italic mb-3 text-sm">You: "{transcript}"</p>
         )}
@@ -265,6 +280,38 @@ export default function VoiceAssistant() {
         {!transcript && !response && !isListening && !isProcessing && (
           <p className="text-gray-500 italic">Tap the microphone to ask a question...</p>
         )}
+      </div>
+
+      <div className="border-t border-gray-100 pt-6 mt-2">
+        <p className="text-xs text-gray-400 mb-3 text-center uppercase tracking-wider font-semibold">Or type your question</p>
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            const input = e.currentTarget.elements.namedItem('textInput') as HTMLInputElement;
+            if (input.value.trim() && !isProcessing) {
+              const text = input.value.trim();
+              setTranscript(text);
+              processVoiceInput(text);
+              input.value = '';
+            }
+          }}
+          className="flex gap-2"
+        >
+          <input 
+            type="text" 
+            name="textInput"
+            placeholder="Type here if your mic isn't working..." 
+            className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            disabled={isListening || isProcessing}
+          />
+          <button 
+            type="submit"
+            disabled={isListening || isProcessing}
+            className="px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 disabled:opacity-50 font-medium text-sm transition-colors"
+          >
+            Send
+          </button>
+        </form>
       </div>
     </div>
   );

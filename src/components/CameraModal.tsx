@@ -23,9 +23,15 @@ export default function CameraModal({ onCapture, onClose, isProcessing }: Camera
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error accessing camera:", err);
-        setError("Could not access camera. Please check permissions.");
+        if (err.name === 'NotAllowedError' || err.message.includes('Permission denied')) {
+          setError("Camera access was denied. Please allow camera permissions in your browser settings and try again.");
+        } else if (err.name === 'NotFoundError' || err.message.includes('Requested device not found')) {
+          setError("No camera found on your device. Please use the 'Upload Image' option instead.");
+        } else {
+          setError(`Could not access camera: ${err.message || 'Unknown error'}. Please check permissions.`);
+        }
       }
     };
     startCamera();

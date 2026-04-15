@@ -428,7 +428,7 @@ export default function Dashboard() {
           </div>
 
           {/* Summary Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6 flex flex-col justify-center items-center text-center">
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-green-600 p-6 flex flex-col justify-center items-center text-center">
             <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <Activity className="h-7 w-7 text-green-600" />
             </div>

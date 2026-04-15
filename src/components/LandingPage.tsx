@@ -103,7 +103,7 @@ export default function LandingPage() {
             Empowering African farmers with AI-driven crop disease detection. Identify issues instantly, get treatment recommendations, and secure your yield.
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
-            <Link to="/signup" className="px-8 py-4 bg-green-600 text-white font-bold rounded-full text-lg hover:bg-green-700 transition-colors flex items-center shadow-lg shadow-green-200">
+            <Link to="/login" className="px-8 py-4 bg-green-600 text-white font-bold rounded-full text-lg hover:bg-green-700 transition-colors flex items-center shadow-lg shadow-green-200">
               Start Diagnosis <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
             <a href="#support" className="px-8 py-4 bg-green-600 text-white font-bold rounded-full text-lg hover:bg-green-700 transition-colors flex items-center shadow-lg shadow-green-200">
